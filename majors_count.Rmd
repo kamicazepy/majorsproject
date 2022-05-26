@@ -1,0 +1,111 @@
+---
+title: "Workshop your passion project"
+author: "Camila Maldonado Franco"
+date: "2/24/2022"
+output:
+  html_document:
+    df_print: paged
+---
+
+-Installing package Tabulizer which uses JavaScript to read data from PDF's. 
+
+```{r}
+#install.packages("tabulizer")
+#if (!require("remotes")) {
+    #install.packages("remotes")
+#}
+# on 64-bit Windows
+#remotes::install_github(c("ropensci/tabulizerjars", "ropensci/tabulizer"), INSTALL_opts = #"--no-multiarch")
+```
+
+
+-Loading necessary packages for data wrangling. 
+
+```{r}
+
+library(tabulizer)
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(stats)
+library(ggplot2)
+library(lubridate)
+library(viridis)
+```
+
+
+```{r}
+# Extract the table
+table <- extract_tables("OfficialFallCounts08on.pdf", pages = 2,
+                        area = list(c(70, 0, 350, 800)),
+                        columns=list(c(140, 170, 290, 325, 360, 395, 430, 465, 500, 535, 570, 605, 640, 675, 710)),
+                        guess=FALSE
+                        )
+
+# Extract the first element of the variable
+table <- as.data.frame(table[[1]])
+
+# Use range of 35 when dividing columns 
+
+colnames(table) <- table[1,]
+table <- slice(table, -1)
+table <- mutate(table, across(`2008-09`:`2020-21`, as.numeric))
+```
+
+```{r}
+# Extract the second table from page 2 of the pdf. 
+table2 <- extract_tables("OfficialFallCounts08on.pdf", pages = 1,
+                        area = list(c(70, 0, 350, 800)),
+                        columns=list(c(120, 150, 260, 300, 340, 380, 410, 450, 490, 530, 570, 600, 635, 680, 710)),
+                        guess=FALSE
+                        )
+
+# Extract the first element of the variable
+table2 <- as.data.frame(table2[[1]])
+
+#Use range of 35 when dividing columns 
+
+colnames(table2) <- table2[1,]
+table2 <- slice(table2, -1)
+table2 <- mutate(table2, across(`2008-09`:`2020-21`, as.numeric))
+
+```
+
+```{r}
+#Stick both Table 1 & Table 2 together
+
+table3 <- bind_rows(table, table2)
+
+#Replacing NA values with 0 in table3. 
+
+table3[is.na(table3)] = 0
+
+```
+
+
+```{r}
+#deleting rows with "Division total"
+table4 <- table3[-c(14,56), ]
+
+```
+
+- Iterating through the rows in Table4 in order to fill out the blank spaces with the abbreviates of the different major departments. 
+
+```{r}
+for (i in 1:nrow(table4)) {
+  if (table4$Dept.[i] == "") {
+    table4$Dept.[i] <- table4$Dept.[i-1]
+  }
+}
+```
+
+-Start of data wrangling. Modifying the df to make it into tidy data.
+
+```{r}
+# code to go back to previous df where the years are converted from columns into rows, or in other words, converted into tidy data, where one row is one observation. 
+#%>%
+  #pivot_wider(names_from = "year", values_from = "total_students")
+```
+
+
+
