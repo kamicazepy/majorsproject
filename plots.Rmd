@@ -1,0 +1,165 @@
+---
+title: "Plots for Smith Majors Project"
+author: "Camila Maldonado Franco"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+---
+
+-Starting to use ggplot to create some visualizations, yet first I will need to group by and count the majors in each year for each department. 
+Some ideas for visualizations are: 
+  -A linegraph to see the relationship between number of majors throughout the years in each department.
+  -A barplot to check the total number of majors in each department
+  
+
+
+```{r}
+table4 <- table4 %>% 
+  rename(Department = Dept.) 
+
+students_per_dept <- table4 %>%
+  pivot_longer(cols = `2008-09`:`2020-21`, names_to = "year", values_to = "num_majors") %>%
+  group_by(Department, year) %>%
+  summarize(total_students = sum(num_majors)) 
+```
+
+
+```{r}
+
+majors_dept <- students_per_dept %>%
+  group_by(Department) %>% 
+  summarize(total = sum(total_students))
+
+ggplot(majors_dept, aes(total, reorder(Department, total), fill = Department)) + geom_col() + scale_fill_manual(values = c("#CD5C5C",
+"#F08080",
+"#E9967A",
+"#FA8072",
+"#FFA07A",
+"#FF4500",
+"#FF8C00",
+"#FFA500",
+"#FFD700",
+"#B8860B",
+"#DAA520",
+"#EEE8AA",
+"#BDB76B",
+"#F0E68C",
+"#808000",
+"#FFFF00",
+"#9ACD32",
+"#556B2F",
+"#6B8E23",
+"#7CFC00",
+"#7FFF00",
+"#ADFF2F",
+"#006400",
+"#008000",
+"#228B22",
+"#00FF00",
+"#32CD32",
+"#90EE90",
+"#98FB98",
+"#8FBC8F",
+"#00FA9A",
+"#00FF7F",
+"#2E8B57",
+"#66CDAA",
+"#3CB371",
+"#20B2AA",
+"#2F4F4F",
+"#008080",
+"#008B8B",
+"#00FFFF",
+"#00FFFF",
+"#E0FFFF",
+"#00CED1",
+"#40E0D0",
+"#48D1CC")) + labs(title = "Smithies favorite majors", x = "Count", y = "Departments") 
+
+```
+
+
+```{r}
+sds <- students_per_dept %>% 
+  filter(Department == "SDS") %>% 
+  group_by(Department)
+
+ggplot(sds, aes(year, total_students)) + geom_line(group = 1) + labs(title = "Statistical and Data Science Majors", x = "Year", y = "Total number of Students" )
+
+```
+
+
+```{r}
+edc <- students_per_dept %>% 
+  filter(Department == "EDC") %>% 
+  group_by(Department)
+
+ggplot(edc, aes(year, total_students)) + geom_line(group = 1) + labs(title = "Education & Child Studies Majors", x = "Year", y = "Total number of Students" )
+```
+
+
+-Spaguetti graph 
+
+```{r}
+linegraph2 <- students_per_dept %>% 
+  mutate(year = as.Date(year, format = "%Y"))
+
+ggplot(linegraph2, aes(year, total_students, color = Department)) + geom_line()  + scale_color_viridis(discrete = TRUE, option = "C") + scale_x_date(date_breaks = "1 year", date_labels = "%Y") + labs(title = "Graduates and their majors throughout time", x = "Year", y = "Total number of Students" )
+
+
+
+```
+
+
+-Loading library Ploty which is used to make interactive visualizations in R. 
+
+```{r}
+library(plotly)
+```
+
+
+```{r}
+#Trying an animated linegraph 
+plot <- linegraph2 %>%
+ggplotly(x = ~year, y = ~total_students,
+split = ~Department,
+frame = ~frame,
+type = 'scatter',
+mode = 'lines',
+line = list(simplify = F))
+
+plot <- linegraph2 %>% layout(
+xaxis = list(
+title = "Date",
+zeroline = F
+),
+yaxis = list(
+title = "Total Number of Students",
+zeroline = F))
+
+plot <- linegraph2 %>% animation_opts(
+frame = 100,
+transition = 0,
+redraw = FALSE)
+
+#plot <- linegraph %>% animation_slider(
+#hide = T)
+
+#plot <- linegraph %>% animation_button(
+#x = 1, xanchor = "right", y = 0, yanchor = "bottom")
+
+```
+
+
+-Filling out blanks in Division column 
+
+```{r}
+table5 <- for (i in 1:nrow(table4)) {
+  if (table4$Division.[i] == "Division II - Natural Science") {
+    table4$Division.[i] <- table4$Division.[i-1]
+  }
+}
+```
+
+
